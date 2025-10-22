@@ -77,6 +77,56 @@ namespace ECommerceStore.Controllers
             return Ok(new { token = token });
         }
 
+        [HttpGet("profile")]
+        [Authorize]
+        public async Task<IActionResult> Profile()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId == null)
+            {
+                return Unauthorized("Unauthorized Request");
+            }
+
+
+            var user = await _context.Users.FindAsync(int.Parse(userId!));
+            return Ok(new { user_id = user!.UserId, user_name = user!.UserName, email = user!.Email, role = user!.Role });
+        }
+
+        [HttpGet("user")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var userList = await _context.Users.Select(user => new UserDTO
+            {
+                UserName = user.UserName,
+                UserId = user.UserId,
+                Role = user.Role,
+                Email = user.Email
+            }).ToListAsync();
+
+            if (userList.Count == 0)
+            {
+                return NoContent();
+            }
+
+            return Ok(userList);
+        }
+
+        [HttpGet("user/{id}")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> GetUserByID(int id)
+        {
+            var user = await _context.Users.SingleOrDefaultAsync(user => user.UserId == id);
+
+            if ( user == null )
+            {
+                return NotFound("User Not Fount.");
+            }
+
+            return Ok(new { user_id = user.UserId, user_name = user.UserName, emai = user.Email, role = user.Role });
+        }
+
         private string generateJwtToken(User user)
         {
             var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!);
@@ -98,22 +148,6 @@ namespace ECommerceStore.Controllers
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
-        }
-
-        [HttpGet("profile")]
-        [Authorize]
-        public async Task<IActionResult> Profile()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if ( userId == null )
-            {
-                return Unauthorized("Unauthorized Request");
-            }
-
-
-            var user = await _context.Users.FindAsync(int.Parse(userId!));
-            return Ok(new { user_id = user!.UserId, user_name = user!.UserName, email = user!.Email });
         }
     }
 }
