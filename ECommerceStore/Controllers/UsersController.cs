@@ -74,7 +74,7 @@ namespace ECommerceStore.Controllers
                 }
             }
             
-            return Ok(new { token = token });
+            return Ok(new { user_name = user.UserName, email = user.Email, user_id = user.UserId, role = user.Role, token = token });
         }
 
         [HttpGet("profile")]
